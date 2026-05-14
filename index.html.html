@@ -1,0 +1,1161 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Hclau IA</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,500;12..96,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#07080d;--panel:#0d0f18;--card:#131620;--card2:#191d2c;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);
+  --accent:#4f8eff;--accent2:#a78bfa;--pink:#f472b6;--green:#34d399;--orange:#fb923c;
+  --text:#eef0f8;--muted:#5a5f7a;--muted2:#8890b0;
+  --font:'Bricolage Grotesque',sans-serif;--mono:'JetBrains Mono',monospace;
+  --sidebar-w:250px;
+}
+body.light{
+  --bg:#f0f2fa;--panel:#ffffff;--card:#f7f8fc;--card2:#eef0f8;
+  --border:rgba(0,0,0,0.08);--border2:rgba(0,0,0,0.14);
+  --text:#0d0f1a;--muted:#9098b8;--muted2:#5a6080;
+}
+html,body{height:100%;overflow:hidden}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;transition:background .3s,color .3s}
+
+/* AURORA */
+.aurora{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+.aurora::before{content:'';position:absolute;width:700px;height:700px;border-radius:50%;
+  background:radial-gradient(circle,rgba(79,142,255,0.09) 0%,transparent 70%);
+  top:-150px;left:-150px;animation:drift1 14s ease-in-out infinite alternate}
+.aurora::after{content:'';position:absolute;width:600px;height:600px;border-radius:50%;
+  background:radial-gradient(circle,rgba(167,139,250,0.07) 0%,transparent 70%);
+  bottom:-100px;right:-100px;animation:drift2 11s ease-in-out infinite alternate}
+@keyframes drift1{to{transform:translate(100px,80px)}}
+@keyframes drift2{to{transform:translate(-80px,-60px)}}
+
+/* ══ LOGIN ══════════════════════════════════════════════ */
+#loginScreen{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center}
+.login-box{width:390px;background:var(--card);border:1px solid var(--border2);border-radius:28px;padding:44px 38px;text-align:center;box-shadow:0 0 100px rgba(79,142,255,0.07);animation:fadeUp .4s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.login-logo-wrap{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:22px}
+.login-logo-icon{width:52px;height:52px;flex-shrink:0}
+.login-logo-text{font-size:26px;font-weight:700;letter-spacing:-1px}
+.login-logo-text span{color:var(--accent)}
+.login-box p{font-size:13px;color:var(--muted2);margin-bottom:28px;line-height:1.6}
+.lf{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;text-align:left}
+.lf label{font-size:11px;color:var(--muted2);text-transform:uppercase;letter-spacing:.06em;font-family:var(--mono)}
+.lf input{background:var(--card2);border:1px solid var(--border2);border-radius:10px;padding:11px 14px;color:var(--text);font-family:var(--font);font-size:14px;outline:none;transition:border-color .2s;width:100%}
+.lf input:focus{border-color:rgba(79,142,255,.5)}
+.login-btn{width:100%;padding:13px;border-radius:12px;border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-family:var(--font);font-size:14px;font-weight:700;cursor:pointer;margin-top:6px;transition:opacity .2s,transform .15s;letter-spacing:.02em}
+.login-btn:hover{opacity:.88;transform:translateY(-1px)}
+.login-err{font-size:12px;color:var(--pink);font-family:var(--mono);min-height:18px;margin-top:10px}
+.login-donate{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:18px;font-size:12px;color:var(--muted2);cursor:pointer;transition:color .15s;background:none;border:none;width:100%;font-family:var(--font)}
+.login-donate:hover{color:var(--orange)}
+
+/* ══ SHELL ══════════════════════════════════════════════ */
+.shell{position:relative;z-index:1;display:flex;height:100vh;width:100vw;overflow:hidden}
+
+/* ══ SIDEBAR ════════════════════════════════════════════ */
+.sidebar{width:var(--sidebar-w);flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;transition:width .3s,opacity .3s;overflow:hidden}
+.sidebar.collapsed{width:0;opacity:0;pointer-events:none}
+.sidebar-logo{padding:16px 14px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;white-space:nowrap}
+.logo-icon{width:36px;height:36px;flex-shrink:0}
+.logo-text{font-size:16px;font-weight:700;letter-spacing:-.5px}
+.logo-text span{color:var(--accent)}
+.nav{padding:12px 8px;flex:1;display:flex;flex-direction:column;gap:3px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;white-space:nowrap;font-size:13px;font-weight:500;color:var(--muted2);cursor:pointer;transition:all .15s;border:none;background:none;width:100%;text-align:left;font-family:var(--font)}
+.nav-item svg{opacity:.7;flex-shrink:0}
+.nav-item:hover{background:var(--card);color:var(--text)}
+.nav-item.active{background:rgba(79,142,255,.12);color:var(--accent)}
+.nav-item.active svg{opacity:1}
+.sidebar-footer{padding:12px 8px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:6px}
+.user-chip{display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:10px;background:var(--card);border:1px solid var(--border)}
+.user-av{width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,var(--accent2),var(--pink));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0}
+.user-email{font-size:11px;color:var(--muted2);font-family:var(--mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.online-badge{display:flex;align-items:center;gap:7px;padding:7px 12px;border-radius:10px;background:rgba(52,211,153,.08);font-size:11px;color:var(--green);font-family:var(--mono)}
+.pulse{width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0;animation:p 2s infinite}
+@keyframes p{0%,100%{box-shadow:0 0 0 0 rgba(52,211,153,.5)}50%{box-shadow:0 0 0 5px rgba(52,211,153,0)}}
+.theme-btn,.logout-btn{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;border:1px solid var(--border2);background:transparent;color:var(--muted2);cursor:pointer;font-size:12px;font-family:var(--font);width:100%;transition:all .15s}
+.theme-btn:hover{background:var(--card);color:var(--text)}
+.logout-btn:hover{background:rgba(244,114,182,.08);color:var(--pink);border-color:rgba(244,114,182,.2)}
+
+/* ══ MAIN ════════════════════════════════════════════════ */
+.main{flex:1;display:flex;flex-direction:column;min-width:0}
+.view{display:none;flex:1;flex-direction:column;min-height:0}
+.view.active{display:flex}
+
+/* ══ HEADER ══════════════════════════════════════════════ */
+.chat-header{padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--panel);flex-shrink:0;gap:10px}
+.ch-left{display:flex;align-items:center;gap:10px}
+.toggle-btn{width:32px;height:32px;border-radius:8px;border:1px solid var(--border2);background:var(--card);color:var(--muted2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
+.toggle-btn:hover{background:var(--card2);color:var(--text)}
+.bot-av{width:34px;height:34px;border-radius:11px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.ch-info h2{font-size:14px;font-weight:600;white-space:nowrap;display:flex;align-items:center;gap:6px}
+.ch-info p{font-size:11px;color:var(--muted2);margin-top:1px;font-family:var(--mono)}
+.model-tag{font-size:10px;font-family:var(--mono);background:rgba(167,139,250,.12);color:var(--accent2);border:1px solid rgba(167,139,250,.2);padding:2px 8px;border-radius:8px}
+.vision-badge{display:none;font-size:10px;font-family:var(--mono);color:var(--green);background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.15);padding:2px 8px;border-radius:8px}
+.vision-badge.show{display:inline-block}
+.ch-right{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.msg-count-badge{background:rgba(79,142,255,.15);color:var(--accent);font-size:11px;font-family:var(--mono);padding:4px 10px;border-radius:20px;border:1px solid rgba(79,142,255,.2);white-space:nowrap}
+.icon-btn{width:32px;height:32px;border-radius:8px;border:1px solid var(--border2);background:var(--card);color:var(--muted2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
+.icon-btn:hover{background:var(--card2);color:var(--text)}
+
+/* ══ MESSAGES ════════════════════════════════════════════ */
+.chat-messages{flex:1;overflow-y:auto;padding:20px 24px;display:flex;flex-direction:column;gap:16px;scroll-behavior:smooth}
+.chat-messages::-webkit-scrollbar{width:3px}
+.chat-messages::-webkit-scrollbar-thumb{background:var(--card2);border-radius:2px}
+.msg{display:flex;gap:10px;align-items:flex-start;animation:msgIn .25s ease}
+@keyframes msgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.msg.user{flex-direction:row-reverse}
+.msg-av{width:30px;height:30px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;font-family:var(--mono)}
+.msg.bot .msg-av{display:flex;align-items:center;justify-content:center;background:none}
+.msg.user .msg-av{background:var(--card2);border:1px solid var(--border2);color:var(--muted2)}
+.msg-bubble{max-width:72%;padding:11px 16px;line-height:1.75;font-size:13.5px;border-radius:14px}
+.msg.bot .msg-bubble{background:var(--card);border:1px solid var(--border)}
+.msg.user .msg-bubble{background:var(--accent);color:#fff;border-radius:14px 14px 4px 14px}
+.msg-bubble strong{font-weight:600}
+.msg-bubble em{font-style:italic}
+.msg-bubble code{font-family:var(--mono);background:rgba(79,142,255,.1);border:1px solid rgba(79,142,255,.15);padding:1px 6px;border-radius:5px;font-size:12px;color:var(--accent2)}
+.msg-bubble pre{background:var(--card2);border:1px solid var(--border2);border-radius:10px;padding:12px 14px;margin:8px 0;overflow-x:auto}
+.msg-bubble pre code{background:none;border:none;padding:0;font-size:12.5px;color:var(--text)}
+.msg-bubble ul,.msg-bubble ol{padding-left:20px;margin:6px 0}
+.msg-bubble li{margin:3px 0}
+.msg-bubble p{margin:4px 0}
+.msg-image-upload{max-width:220px;border-radius:10px;margin-bottom:6px;display:block}
+.generated-img-wrap{margin-top:8px}
+.generated-img{max-width:300px;border-radius:12px;border:1px solid var(--border2);display:block;cursor:pointer;transition:transform .2s}
+.generated-img:hover{transform:scale(1.02)}
+.img-dl-btn{display:inline-flex;align-items:center;gap:5px;margin-top:8px;font-size:11px;font-family:var(--mono);color:var(--accent);cursor:pointer;background:rgba(79,142,255,.08);border:1px solid rgba(79,142,255,.2);padding:4px 10px;border-radius:8px;text-decoration:none}
+.img-dl-btn:hover{background:rgba(79,142,255,.15)}
+.img-generating{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted2);font-family:var(--mono)}
+.spinner{width:14px;height:14px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.typing-bubble{display:flex;gap:5px;align-items:center;padding:14px 18px}
+.tdot{width:7px;height:7px;border-radius:50%;background:var(--muted2);animation:td 1.2s infinite}
+.tdot:nth-child(2){animation-delay:.2s}.tdot:nth-child(3){animation-delay:.4s}
+@keyframes td{0%,80%,100%{transform:scale(.6);opacity:.4}40%{transform:scale(1);opacity:1}}
+.cursor-blink{display:inline-block;animation:blink .7s step-end infinite;color:var(--accent)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+/* ══ INPUT ═══════════════════════════════════════════════ */
+.chat-input-wrap{padding:12px 16px 8px;border-top:1px solid var(--border);background:var(--panel);flex-shrink:0}
+.img-preview-wrap{display:none;align-items:center;gap:10px;padding:8px 12px;background:var(--card);border:1px solid var(--border2);border-radius:10px;margin-bottom:10px}
+.img-preview-wrap.show{display:flex}
+.img-preview-thumb{width:44px;height:44px;border-radius:8px;object-fit:cover;flex-shrink:0}
+.img-preview-info{flex:1;min-width:0}
+.img-preview-name{font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.img-preview-size{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:2px}
+.img-rm-btn{width:24px;height:24px;border-radius:6px;border:none;background:rgba(244,114,182,.1);color:var(--pink);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px}
+.input-row{display:flex;gap:8px;align-items:flex-end;background:var(--card);border:1px solid var(--border2);border-radius:14px;padding:10px 10px 10px 14px;transition:border-color .2s}
+.input-row:focus-within{border-color:rgba(79,142,255,.45);box-shadow:0 0 0 3px rgba(79,142,255,.07)}
+textarea#userMsg{flex:1;background:transparent;border:none;outline:none;color:var(--text);font-family:var(--font);font-size:14px;resize:none;line-height:1.5;max-height:120px}
+textarea#userMsg::placeholder{color:var(--muted)}
+.img-btn{width:34px;height:34px;border-radius:9px;border:1px solid var(--border2);background:transparent;color:var(--muted2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
+.img-btn.has-image{background:rgba(79,142,255,.12);color:var(--accent);border-color:rgba(79,142,255,.3)}
+.send-btn{width:36px;height:36px;border-radius:10px;border:none;background:var(--accent);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .15s,opacity .15s;flex-shrink:0}
+.send-btn:hover{transform:scale(1.07)}
+.send-btn:disabled{opacity:.35;cursor:default;transform:none}
+.chat-bottom-bar{display:flex;align-items:center;justify-content:space-between;margin-top:8px;padding:0 2px}
+.input-hint{font-size:11px;color:var(--muted);font-family:var(--mono)}
+.donate-bar-btn{display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;background:linear-gradient(135deg,var(--orange),var(--pink));color:#fff;font-family:var(--font);font-size:12px;font-weight:600;border:none;cursor:pointer;transition:opacity .2s,transform .15s}
+.donate-bar-btn:hover{opacity:.88;transform:translateY(-1px)}
+
+/* ══ ADMIN / VIEWS ═══════════════════════════════════════ */
+.admin-view{flex:1;overflow-y:auto;padding:24px}
+.admin-view::-webkit-scrollbar{width:3px}
+.admin-section{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px 22px;margin-bottom:18px}
+.admin-section h3{font-size:14px;font-weight:600;margin-bottom:4px}
+.admin-section p{font-size:12px;color:var(--muted2);margin-bottom:16px;line-height:1.5}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.field label{font-size:11px;color:var(--muted2);letter-spacing:.06em;text-transform:uppercase;font-family:var(--mono)}
+.field input,.field textarea,.field select{background:var(--card2);border:1px solid var(--border);border-radius:9px;padding:10px 13px;color:var(--text);font-family:var(--font);font-size:13px;outline:none;width:100%;transition:border-color .2s}
+.field input:focus,.field textarea:focus{border-color:rgba(79,142,255,.4)}
+.field textarea{resize:vertical;min-height:70px;line-height:1.55}
+.btn{padding:9px 18px;border-radius:9px;border:none;font-family:var(--font);font-size:13px;font-weight:500;cursor:pointer;transition:opacity .2s}
+.btn-blue{background:var(--accent);color:#fff}.btn-blue:hover{opacity:.85}
+.btn-red{background:rgba(244,114,182,.12);color:var(--pink);border:1px solid rgba(244,114,182,.2)}.btn-red:hover{background:rgba(244,114,182,.2)}
+.btn-ghost{background:var(--card2);color:var(--muted2);border:1px solid var(--border)}.btn-ghost:hover{color:var(--text)}
+.btn-sm{padding:5px 12px;font-size:12px}
+.alert{padding:9px 14px;border-radius:8px;font-size:12px;margin-top:8px;display:none}
+.alert.show{display:block}
+.alert-ok{background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.2);color:var(--green)}
+.alert-err{background:rgba(244,114,182,.1);border:1px solid rgba(244,114,182,.2);color:var(--pink)}
+
+/* INBOX */
+.inbox-msg{background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:10px}
+.inbox-meta{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.inbox-email{font-size:11px;color:var(--accent2);font-family:var(--mono);background:rgba(167,139,250,.1);padding:2px 8px;border-radius:8px}
+.inbox-time{font-size:11px;color:var(--muted);font-family:var(--mono)}
+.inbox-new{font-size:10px;background:rgba(79,142,255,.15);color:var(--accent);padding:2px 8px;border-radius:10px;font-family:var(--mono)}
+.inbox-q{font-size:13px;color:var(--muted2);margin-bottom:4px}
+.inbox-q strong{color:var(--text)}
+.empty{text-align:center;padding:40px 20px;color:var(--muted);font-size:13px}
+
+/* HISTORIQUE */
+.hist-item{background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:12px 16px;margin-bottom:8px;cursor:pointer;transition:border-color .15s}
+.hist-item:hover{border-color:var(--accent)}
+.hist-preview{font-size:13px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hist-time{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:4px}
+
+/* USERS */
+.user-card{background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:10px;cursor:pointer;transition:border-color .15s}
+.user-card:hover{border-color:var(--accent)}
+.user-card-top{display:flex;align-items:center;justify-content:space-between}
+.user-card-email{font-size:13px;font-weight:600}
+.user-card-badge{font-size:10px;background:rgba(79,142,255,.15);color:var(--accent);padding:2px 8px;border-radius:8px;font-family:var(--mono)}
+.user-card-meta{font-size:11px;color:var(--muted2);font-family:var(--mono);margin-top:4px}
+
+/* RÉPONSES AUTO */
+.reply-card{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:10px}
+.reply-kw{font-size:11px;color:var(--accent);font-family:var(--mono);margin-bottom:4px}
+.reply-text{font-size:13px;color:var(--text);line-height:1.5}
+
+/* DONATE VIEW */
+.donate-hero{background:linear-gradient(135deg,rgba(251,146,60,.08),rgba(244,114,182,.08));border:1px solid rgba(251,146,60,.2);border-radius:16px;padding:28px;text-align:center;margin-bottom:18px}
+.donate-hero h3{font-size:20px;font-weight:700;margin-bottom:8px}
+.donate-hero p{font-size:13px;color:var(--muted2);margin-bottom:20px;line-height:1.6}
+.donate-cta{display:inline-flex;align-items:center;gap:8px;padding:13px 28px;border-radius:14px;background:linear-gradient(135deg,var(--orange),var(--pink));color:#fff;font-family:var(--font);font-size:15px;font-weight:700;text-decoration:none;transition:opacity .2s,transform .15s;border:none;cursor:pointer}
+.donate-cta:hover{opacity:.88;transform:translateY(-2px)}
+
+/* MODAL CONVERSATION */
+.conv-modal{position:fixed;inset:0;z-index:500;background:rgba(7,8,13,.95);display:none;flex-direction:column;backdrop-filter:blur(6px)}
+.conv-modal.open{display:flex}
+.conv-modal-hd{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--panel);flex-shrink:0}
+.conv-modal-hd h3{font-size:14px;font-weight:600}
+.conv-modal-body{flex:1;overflow-y:auto;padding:20px 24px;display:flex;flex-direction:column;gap:10px}
+.conv-msg{padding:10px 14px;border-radius:12px;font-size:13px;line-height:1.6;max-width:70%}
+.conv-msg.user{background:var(--accent);color:#fff;align-self:flex-end}
+.conv-msg.bot{background:var(--card);border:1px solid var(--border);align-self:flex-start}
+.conv-msg-time{font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:3px}
+
+/* LOCK */
+.lock-overlay{position:fixed;inset:0;z-index:999;background:rgba(7,8,13,.97);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px)}
+.lock-box{background:var(--card);border:1px solid var(--border2);border-radius:20px;padding:36px 32px;width:360px;text-align:center}
+.lock-icon{width:52px;height:52px;border-radius:16px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;margin:0 auto 18px}
+.lock-box h2{font-size:18px;font-weight:700;margin-bottom:6px}
+.lock-box p{font-size:13px;color:var(--muted2);margin-bottom:22px}
+.lock-input{width:100%;background:var(--card2);border:1px solid var(--border2);border-radius:10px;padding:12px 16px;color:var(--text);font-family:var(--mono);font-size:16px;outline:none;text-align:center;letter-spacing:.2em;margin-bottom:12px;transition:border-color .2s}
+.lock-input:focus{border-color:rgba(79,142,255,.5)}
+.lock-btn{width:100%;padding:12px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;margin-bottom:10px}
+.lock-err{font-size:12px;color:var(--pink);font-family:var(--mono);min-height:18px}
+.shake{animation:shake .4s ease}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+</style>
+</head>
+<body>
+<div class="aurora"></div>
+
+<!-- ═══ LOGIN ═══════════════════════════════════════════════ -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo-wrap">
+      <!-- Logo SVG -->
+      <svg class="login-logo-icon" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="52" height="52" rx="14" fill="url(#lg1)"/>
+        <path d="M16 26C16 20.477 20.477 16 26 16C31.523 16 36 20.477 36 26C36 31.523 31.523 36 26 36" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M26 36C23.239 36 21 33.761 21 31C21 28.239 23.239 26 26 26C28.761 26 31 28.239 31 31" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+        <circle cx="26" cy="20" r="2" fill="white"/>
+        <defs><linearGradient id="lg1" x1="0" y1="0" x2="52" y2="52" gradientUnits="userSpaceOnUse"><stop stop-color="#4f8eff"/><stop offset="1" stop-color="#a78bfa"/></linearGradient></defs>
+      </svg>
+      <div class="login-logo-text">Hclau <span>IA</span></div>
+    </div>
+    <p>Connecte-toi pour accéder à l'assistant IA gratuit</p>
+    <div class="lf"><label>Adresse email</label><input type="email" id="loginEmail" placeholder="ton@email.com" autocomplete="email"/></div>
+    <div class="lf"><label>Prénom</label><input type="text" id="loginName" placeholder="Ton prénom"/></div>
+    <button class="login-btn" onclick="doLogin()">Accéder au chat →</button>
+    <div class="login-err" id="loginErr"></div>
+    <button class="login-donate" onclick="openDonate()">❤️ Soutenir Hclau IA</button>
+  </div>
+</div>
+
+<!-- ═══ APP ══════════════════════════════════════════════════ -->
+<div class="shell" id="appShell" style="display:none">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <svg class="logo-icon" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="36" height="36" rx="10" fill="url(#lg2)"/>
+        <path d="M11 18C11 14.134 14.134 11 18 11C21.866 11 25 14.134 25 18C25 21.866 21.866 25 18 25" stroke="white" stroke-width="2" stroke-linecap="round"/>
+        <path d="M18 25C16.343 25 15 23.657 15 22C15 20.343 16.343 19 18 19C19.657 19 21 20.343 21 22" stroke="white" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="18" cy="13.5" r="1.5" fill="white"/>
+        <defs><linearGradient id="lg2" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse"><stop stop-color="#4f8eff"/><stop offset="1" stop-color="#a78bfa"/></linearGradient></defs>
+      </svg>
+      <div class="logo-text">Hclau <span>IA</span></div>
+    </div>
+    <nav class="nav">
+      <button class="nav-item active" onclick="showView('chat',this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>Chat
+      </button>
+      <button class="nav-item" onclick="showView('history',this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Historique
+      </button>
+      <button class="nav-item" onclick="showView('inbox',this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg>
+        Boîte de réception
+        <span id="inbox-badge" style="margin-left:auto;background:var(--accent);color:#fff;font-size:10px;padding:1px 7px;border-radius:10px;font-family:var(--mono);display:none">0</span>
+      </button>
+      <button class="nav-item" onclick="showView('users',this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Utilisateurs
+      </button>
+      <button class="nav-item" onclick="showView('replies',this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>Réponses auto
+      </button>
+      <button class="nav-item" onclick="showView('config',this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>Configuration
+      </button>
+      <button class="nav-item" onclick="showView('donate',this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>Soutenir
+      </button>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-chip">
+        <div class="user-av" id="userAv">?</div>
+        <div class="user-email" id="userEmail">—</div>
+      </div>
+      <div class="online-badge"><div class="pulse"></div>Hclau IA en ligne</div>
+      <button class="theme-btn" onclick="toggleTheme()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        <span id="themeLabel">Thème clair</span>
+      </button>
+      <button class="logout-btn" onclick="doLogout()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Déconnexion
+      </button>
+    </div>
+  </aside>
+
+  <div class="main">
+
+    <!-- CHAT -->
+    <div class="view active" id="view-chat">
+      <div class="chat-header">
+        <div class="ch-left">
+          <button class="toggle-btn" onclick="toggleSidebar()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+          <div class="bot-av">
+            <svg width="34" height="34" viewBox="0 0 36 36" fill="none"><rect width="36" height="36" rx="11" fill="url(#lg3)"/><path d="M11 18C11 14.134 14.134 11 18 11C21.866 11 25 14.134 25 18C25 21.866 21.866 25 18 25" stroke="white" stroke-width="2" stroke-linecap="round"/><path d="M18 25C16.343 25 15 23.657 15 22C15 20.343 16.343 19 18 19C19.657 19 21 20.343 21 22" stroke="white" stroke-width="2" stroke-linecap="round"/><circle cx="18" cy="13.5" r="1.5" fill="white"/><defs><linearGradient id="lg3" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse"><stop stop-color="#4f8eff"/><stop offset="1" stop-color="#a78bfa"/></linearGradient></defs></svg>
+          </div>
+          <div class="ch-info">
+            <h2>Hclau IA <span class="model-tag" id="model-label">Groq</span><span class="vision-badge" id="vision-badge">👁 Vision</span></h2>
+            <p>Assistant intelligent · toujours disponible</p>
+          </div>
+        </div>
+        <div class="ch-right">
+          <div class="msg-count-badge" id="msg-counter">0 messages</div>
+          <button class="icon-btn" title="Télécharger la conversation" onclick="downloadChat()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
+          <button class="icon-btn" title="Effacer le chat" onclick="clearChat()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
+        </div>
+      </div>
+      <div class="chat-messages" id="chatBox">
+        <div class="msg bot">
+          <div class="msg-av"><svg width="30" height="30" viewBox="0 0 36 36" fill="none"><rect width="36" height="36" rx="9" fill="url(#lg4)"/><path d="M11 18C11 14.134 14.134 11 18 11C21.866 11 25 14.134 25 18C25 21.866 21.866 25 18 25" stroke="white" stroke-width="2" stroke-linecap="round"/><path d="M18 25C16.343 25 15 23.657 15 22C15 20.343 16.343 19 18 19C19.657 19 21 20.343 21 22" stroke="white" stroke-width="2" stroke-linecap="round"/><circle cx="18" cy="13.5" r="1.5" fill="white"/><defs><linearGradient id="lg4" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse"><stop stop-color="#4f8eff"/><stop offset="1" stop-color="#a78bfa"/></linearGradient></defs></svg></div>
+          <div class="msg-bubble">Salut ! Je suis <strong>Hclau IA</strong>. Tu peux me poser des questions, me demander de <strong>générer une image 🎨</strong> (ex: "génère une image de..."), ou envoyer une photo 📷</div>
+        </div>
+      </div>
+      <div class="chat-input-wrap">
+        <div class="img-preview-wrap" id="imgPreviewWrap">
+          <img class="img-preview-thumb" id="imgThumb" src="" alt=""/>
+          <div class="img-preview-info">
+            <div class="img-preview-name" id="imgName">image.jpg</div>
+            <div class="img-preview-size" id="imgSize">0 KB</div>
+          </div>
+          <button class="img-rm-btn" onclick="removeImage()">✕</button>
+        </div>
+        <div class="input-row">
+          <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="handleImageUpload(event)"/>
+          <button class="img-btn" id="imgBtn" onclick="document.getElementById('fileInput').click()" title="Joindre une image">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          </button>
+          <textarea id="userMsg" placeholder="Écris ton message... (ex: génère une image de, calcule...)" rows="1"></textarea>
+          <button class="send-btn" id="sendBtn" onclick="sendMsg()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+        <div class="chat-bottom-bar">
+          <div class="input-hint">Entrée pour envoyer · Shift+Entrée saut de ligne · 📎 image</div>
+          <button class="donate-bar-btn" onclick="openDonate()">❤️ Soutenir Hclau IA</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- HISTORIQUE -->
+    <div class="view" id="view-history" style="flex-direction:column">
+      <div class="chat-header" style="flex-shrink:0">
+        <div class="ch-left">
+          <button class="toggle-btn" onclick="toggleSidebar()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+          <div><h2 style="font-size:15px;font-weight:600">Historique</h2><p style="font-size:11px;color:var(--muted2);font-family:var(--mono);margin-top:2px">Tes conversations</p></div>
+        </div>
+        <button class="btn btn-red btn-sm" onclick="clearHistory()">Tout effacer</button>
+      </div>
+      <div class="admin-view" id="historyList"></div>
+    </div>
+
+    <!-- INBOX -->
+    <div class="view" id="view-inbox" style="flex-direction:column">
+      <div class="chat-header" style="flex-shrink:0">
+        <div class="ch-left">
+          <button class="toggle-btn" onclick="toggleSidebar()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+          <div><h2 style="font-size:15px;font-weight:600">Boîte de réception</h2><p style="font-size:11px;color:var(--muted2);font-family:var(--mono);margin-top:2px">Messages reçus</p></div>
+        </div>
+        <button class="btn btn-red btn-sm" onclick="clearInbox()">Tout effacer</button>
+      </div>
+      <div class="admin-view" id="inboxList"></div>
+    </div>
+
+    <!-- UTILISATEURS -->
+    <div class="view" id="view-users" style="flex-direction:column">
+      <div class="chat-header" style="flex-shrink:0">
+        <div class="ch-left">
+          <button class="toggle-btn" onclick="toggleSidebar()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+          <div><h2 style="font-size:15px;font-weight:600">Utilisateurs</h2><p style="font-size:11px;color:var(--muted2);font-family:var(--mono);margin-top:2px">Voir les conversations</p></div>
+        </div>
+      </div>
+      <div class="admin-view" id="usersList"></div>
+    </div>
+
+    <!-- RÉPONSES AUTO -->
+    <div class="view" id="view-replies" style="flex-direction:column">
+      <div class="chat-header" style="flex-shrink:0">
+        <div class="ch-left">
+          <button class="toggle-btn" onclick="toggleSidebar()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+          <div><h2 style="font-size:15px;font-weight:600">Réponses automatiques</h2></div>
+        </div>
+      </div>
+      <div class="admin-view">
+        <div class="admin-section">
+          <h3>Ajouter une réponse</h3>
+          <p>Quand un utilisateur écrit ce mot-clé, le bot répond automatiquement.</p>
+          <div class="field"><label>Mot-clé</label><input type="text" id="kwInput" placeholder="ex: bonjour, prix..."/></div>
+          <div class="field"><label>Réponse</label><textarea id="respInput" placeholder="La réponse à afficher..."></textarea></div>
+          <button class="btn btn-blue" onclick="addReply()">Ajouter</button>
+          <div class="alert" id="replyAlert"></div>
+        </div>
+        <div class="admin-section">
+          <h3>Réponses enregistrées</h3>
+          <div id="replyList"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONFIG -->
+    <div class="view" id="view-config" style="flex-direction:column">
+      <div class="chat-header" style="flex-shrink:0">
+        <div class="ch-left">
+          <button class="toggle-btn" onclick="toggleSidebar()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+          <div><h2 style="font-size:15px;font-weight:600">Configuration</h2></div>
+        </div>
+      </div>
+      <div class="admin-view">
+        <div class="admin-section">
+          <h3>Clé API Groq</h3>
+          <p>Stockée dans ce navigateur uniquement. Commence par <code style="font-family:var(--mono);color:var(--accent)">gsk_</code></p>
+          <div class="field"><label>Clé API</label><input type="password" id="apiKeyInput" placeholder="gsk_..."/></div>
+          <button class="btn btn-blue" onclick="saveKey()">Sauvegarder</button>
+          <div class="alert" id="keyAlert"></div>
+        </div>
+        <div class="admin-section">
+          <h3>Modèle Groq</h3>
+          <p>Pour analyser des images reçues, choisis un modèle <strong style="color:var(--green)">👁 Vision</strong>.</p>
+          <div class="field">
+            <label>Modèle</label>
+            <select id="modelSelect">
+              <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile — texte (recommandé)</option>
+              <option value="meta-llama/llama-4-scout-17b-16e-instruct">llama-4-scout — 👁 Vision + texte</option>
+              <option value="meta-llama/llama-4-maverick-17b-128e-instruct">llama-4-maverick — 👁 Vision + texte</option>
+              <option value="llama-3.1-8b-instant">llama-3.1-8b-instant — rapide</option>
+              <option value="mixtral-8x7b-32768">mixtral-8x7b</option>
+            </select>
+          </div>
+          <button class="btn btn-blue" onclick="saveModel()">Sauvegarder</button>
+          <div class="alert" id="modelAlert"></div>
+        </div>
+        <div class="admin-section">
+          <h3>Personnalité du bot</h3>
+          <div class="field"><label>Prompt système</label><textarea id="sysPromptInput" rows="4" placeholder="Tu es Hclau IA..."></textarea></div>
+          <button class="btn btn-blue" onclick="savePrompt()">Sauvegarder</button>
+          <div class="alert" id="promptAlert"></div>
+        </div>
+        <div class="admin-section">
+          <h3>Lien de don FedaPay</h3>
+          <p>Le lien FedaPay est déjà configuré : https://me.fedapay.com/hclauia</p>
+          <div class="field"><label>Lien PayPal</label><input type="url" id="paypalInput" placeholder="https://me.fedapay.com/hclauia" value="https://me.fedapay.com/hclauia"/></div>
+          <button class="btn btn-blue" onclick="savePaypal()">Sauvegarder</button>
+          <div class="alert" id="paypalAlert"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DONATE -->
+    <div class="view" id="view-donate" style="flex-direction:column">
+      <div class="chat-header" style="flex-shrink:0">
+        <div class="ch-left">
+          <button class="toggle-btn" onclick="toggleSidebar()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+          <div><h2 style="font-size:15px;font-weight:600">Soutenir Hclau IA</h2></div>
+        </div>
+      </div>
+      <div class="admin-view">
+        <div class="donate-hero">
+          <h3>❤️ Soutenir le projet</h3>
+          <p>Hclau IA est gratuit pour tous.<br>Un don aide à couvrir les coûts de l'API et du serveur.</p>
+          <button class="donate-cta" onclick="openDonate()">💙 Faire un don via FedaPay</button>
+          <div style="margin-top:20px">
+            <p style="font-size:12px;color:var(--muted2);margin-bottom:12px;font-family:var(--mono)">📱 Ou scanne le QR Code pour donner</p>
+          </div><img src="i.png" alt="QR Code FedaPay - Soutenir Hclau IA" style="width:200px;height:200px;border-radius:12px;border:3px solid rgba(79,142,255,0.3);margin-top:8px;background:#fff;padding:6px"/>
+          <ul style="padding-left:20px;color:var(--muted2);font-size:13px;line-height:2.2">
+            <li>📱 T-Money (Togo)</li>
+            <li>📱 Flooz / Moov Money</li>
+            <li>💳 Carte Visa/Mastercard (France et monde entier)</li>
+            <li>🌍 Mobile Money (Bénin, Côte d'Ivoire, Sénégal...)</li>
+          </ul>
+        </div>
+        <div class="admin-section">
+          <h3>Pourquoi donner ?</h3>
+          <ul style="padding-left:20px;color:var(--muted2);font-size:13px;line-height:2.2">
+            <li>Maintenir l'accès à l'API Groq (coût mensuel)</li>
+            <li>Financer la génération d'images</li>
+            <li>Garder le service gratuit pour tous</li>
+            <li>Développer de nouvelles fonctionnalités</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL CONVERSATION ADMIN -->
+<div class="conv-modal" id="convModal">
+  <div class="conv-modal-hd">
+    <div>
+      <h3 id="convModalTitle">Conversation</h3>
+      <p style="font-size:11px;color:var(--muted2);font-family:var(--mono);margin-top:2px" id="convModalSub"></p>
+    </div>
+    <button class="btn btn-ghost btn-sm" onclick="closeConvModal()">✕ Fermer</button>
+  </div>
+  <div class="conv-modal-body" id="convModalBody"></div>
+</div>
+
+<!-- LOCK -->
+<div class="lock-overlay" id="lockOverlay" style="display:none">
+  <div class="lock-box">
+    <div class="lock-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div>
+    <h2>Accès Admin</h2>
+    <p>Entre le code admin pour continuer.</p>
+    <input class="lock-input" type="password" id="lockInput" placeholder="••••" maxlength="10"/>
+    <button class="lock-btn" onclick="checkPassword()">Déverrouiller</button>
+    <div class="lock-err" id="lockErr"></div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+// CONSTANTES
+// ══════════════════════════════════════════════════════════
+const GROQ_URL    = '/api/chat';
+const ADMIN_CODE  = '1038';
+const ADMIN_PAGES = ['inbox','users','replies','config'];
+const VISION_MODELS = ['llama-4','vision'];
+const IMG_TRIGGERS  = ['génère une image','genere une image','generate an image','generate image','crée une image','cree une image','dessine','draw','imagine','image de','image of','photo de','photo of'];
+
+// ══════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════
+let chatHistory = [];
+let msgCount    = 0;
+let currentUser = null;
+let pendingImageBase64 = null;
+let pendingImageMime   = null;
+let pendingImageDataUrl = null;
+
+// ══════════════════════════════════════════════════════════
+// DB
+// ══════════════════════════════════════════════════════════
+const DB = {
+  get: k => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
+  set: (k,v) => localStorage.setItem(k, JSON.stringify(v)),
+};
+
+// ══════════════════════════════════════════════════════════
+// LOGIN / LOGOUT
+// ══════════════════════════════════════════════════════════
+function doLogin() {
+  const email = document.getElementById('loginEmail').value.trim().toLowerCase();
+  const name  = document.getElementById('loginName').value.trim();
+  const err   = document.getElementById('loginErr');
+  if (!email || !/^[^@]+@[^@]+\.[^@]+$/.test(email)) { err.textContent = 'Entre une adresse email valide.'; return; }
+  if (!name) { err.textContent = 'Entre ton prénom.'; return; }
+  currentUser = { email, name };
+  localStorage.setItem('hc_user', JSON.stringify(currentUser));
+  const users = DB.get('hc_users') || {};
+  if (!users[email]) users[email] = { email, name, firstSeen: new Date().toISOString(), msgCount: 0 };
+  users[email].lastSeen = new Date().toISOString();
+  users[email].name = name;
+  DB.set('hc_users', users);
+  startApp();
+}
+
+function doLogout() {
+  currentUser = null;
+  localStorage.removeItem('hc_user');
+  chatHistory = []; msgCount = 0;
+  resetChatUI();
+  document.getElementById('appShell').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+}
+
+function startApp() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('appShell').style.display = 'flex';
+  document.getElementById('userAv').textContent = currentUser.name.charAt(0).toUpperCase();
+  document.getElementById('userEmail').textContent = currentUser.email;
+  // Restore config
+  const key = localStorage.getItem('hc_apikey') || '';
+  if (key) document.getElementById('apiKeyInput').value = key;
+  const model = localStorage.getItem('hc_model') || 'llama-3.3-70b-versatile';
+  const sel = document.getElementById('modelSelect');
+  if ([...sel.options].some(o => o.value === model)) sel.value = model;
+  updateModelUI(model);
+  document.getElementById('sysPromptInput').value = localStorage.getItem('hc_sysprompt') || 'Tu es Hclau IA, un assistant intelligent, sympa et utile. Réponds en français de façon concise et claire.';
+  const pp = localStorage.getItem('hc_paypal') || '';
+  if (pp) document.getElementById('paypalInput').value = pp;
+  // Theme
+  const dark = localStorage.getItem('hc_theme') !== 'light';
+  document.body.classList.toggle('light', !dark);
+  document.getElementById('themeLabel').textContent = dark ? 'Thème clair' : 'Thème sombre';
+  renderReplies(); updateInboxBadge();
+}
+
+window.onload = () => {
+  const saved = DB.get('hc_user');
+  if (saved?.email && saved?.name) { currentUser = saved; startApp(); }
+  document.getElementById('loginEmail').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('loginName').focus(); });
+  document.getElementById('loginName').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+};
+
+// ══════════════════════════════════════════════════════════
+// THÈME
+// ══════════════════════════════════════════════════════════
+function toggleTheme() {
+  const isLight = document.body.classList.toggle('light');
+  localStorage.setItem('hc_theme', isLight ? 'light' : 'dark');
+  document.getElementById('themeLabel').textContent = isLight ? 'Thème sombre' : 'Thème clair';
+}
+
+// ══════════════════════════════════════════════════════════
+// DON
+// ══════════════════════════════════════════════════════════
+function openDonate() { window.open("https://me.fedapay.com/hclauia", "_blank"); } function openDonate_old() {
+  const link = localStorage.getItem('hc_paypal') || '';
+  if (!link) { alert('Le lien de don n\'est pas encore configuré.'); return; }
+  window.open(link, '_blank');
+}
+function savePaypal() {
+  const p = document.getElementById('paypalInput').value.trim();
+  if (!p) return flash('paypalAlert','Entre un lien PayPal.',false);
+  localStorage.setItem('hc_paypal', p); flash('paypalAlert','Lien PayPal sauvegardé !',true);
+}
+
+// ══════════════════════════════════════════════════════════
+// IMAGE GENERATION (Pollinations.ai)
+// ══════════════════════════════════════════════════════════
+function detectImageRequest(text) {
+  const lower = text.toLowerCase();
+  for (const trigger of IMG_TRIGGERS) {
+    if (lower.includes(trigger)) return true;
+  }
+  return false;
+}
+
+function extractImagePrompt(text) {
+  const lower = text.toLowerCase();
+  for (const trigger of IMG_TRIGGERS) {
+    const idx = lower.indexOf(trigger);
+    if (idx !== -1) {
+      const after = text.slice(idx + trigger.length).trim();
+      return after || text;
+    }
+  }
+  return text;
+}
+
+async function generateImage(prompt) {
+  const encodedPrompt = encodeURIComponent(prompt);
+  const seed = Math.floor(Math.random() * 99999);
+  const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=512&height=512&seed=${seed}&nologo=true&enhance=true`;
+
+  // Affiche un message de chargement
+  const wrap = document.createElement('div');
+  wrap.className = 'msg bot';
+  wrap.innerHTML = `<div class="msg-av"><svg width="30" height="30" viewBox="0 0 36 36" fill="none"><rect width="36" height="36" rx="9" fill="url(#lgx)"/><path d="M11 18C11 14.134 14.134 11 18 11C21.866 11 25 14.134 25 18C25 21.866 21.866 25 18 25" stroke="white" stroke-width="2" stroke-linecap="round"/><path d="M18 25C16.343 25 15 23.657 15 22C15 20.343 16.343 19 18 19C19.657 19 21 20.343 21 22" stroke="white" stroke-width="2" stroke-linecap="round"/><circle cx="18" cy="13.5" r="1.5" fill="white"/><defs><linearGradient id="lgx" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse"><stop stop-color="#4f8eff"/><stop offset="1" stop-color="#a78bfa"/></linearGradient></defs></svg></div>
+    <div class="msg-bubble"><div class="img-generating"><div class="spinner"></div>Génération en cours...</div></div>`;
+  chatBox.appendChild(wrap);
+  chatBox.scrollTop = chatBox.scrollHeight;
+  const bubble = wrap.querySelector('.msg-bubble');
+
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      bubble.innerHTML = `
+        <div style="font-size:12px;color:var(--muted2);font-family:var(--mono);margin-bottom:8px">🎨 Image générée : "${esc(prompt.substring(0,60))}${prompt.length>60?'…':''}"</div>
+        <div class="generated-img-wrap">
+          <img src="${url}" class="generated-img" onclick="window.open('${url}','_blank')" title="Cliquer pour agrandir"/>
+          <a href="${url}" download="hclau-image.jpg" class="img-dl-btn" target="_blank">⬇ Télécharger</a>
+        </div>`;
+      chatBox.scrollTop = chatBox.scrollHeight;
+      resolve(`Image générée : "${prompt}"`);
+    };
+    img.onerror = () => {
+      bubble.innerHTML = '❌ Impossible de générer l\'image. Réessaie avec un autre prompt.';
+      chatBox.scrollTop = chatBox.scrollHeight;
+      resolve('Erreur de génération.');
+    };
+    img.src = url;
+    // Timeout 30s
+    setTimeout(() => {
+      if (!img.complete) {
+        img.src = '';
+        bubble.innerHTML = '⏱ Timeout : la génération a pris trop longtemps. Réessaie.';
+        chatBox.scrollTop = chatBox.scrollHeight;
+        resolve('Timeout.');
+      }
+    }, 30000);
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+// CHAT UI
+// ══════════════════════════════════════════════════════════
+const chatBox = document.getElementById('chatBox');
+const userMsg = document.getElementById('userMsg');
+const sendBtn = document.getElementById('sendBtn');
+
+userMsg.addEventListener('input', () => { userMsg.style.height='auto'; userMsg.style.height=Math.min(userMsg.scrollHeight,120)+'px'; });
+userMsg.addEventListener('keydown', e => { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();} });
+
+function isVision(m) { return VISION_MODELS.some(v => m.includes(v)); }
+
+function updateModelUI(model) {
+  const short = model.split('/').pop().split('-').slice(0,4).join('-');
+  document.getElementById('model-label').textContent = short;
+  const vb  = document.getElementById('vision-badge');
+  const btn = document.getElementById('imgBtn');
+  isVision(model) ? vb.classList.add('show') : vb.classList.remove('show');
+  btn.style.opacity = isVision(model) ? '1' : '0.35';
+  btn.title = isVision(model) ? 'Joindre une image' : 'Sélectionne un modèle Vision';
+}
+
+function addMsg(text, role, html=false, imgSrc=null) {
+  const wrap = document.createElement('div'); wrap.className = 'msg '+role;
+  const av   = document.createElement('div'); av.className = 'msg-av';
+  if (role === 'bot') {
+    av.innerHTML = `<svg width="30" height="30" viewBox="0 0 36 36" fill="none"><rect width="36" height="36" rx="9" fill="url(#lgb)"/><path d="M11 18C11 14.134 14.134 11 18 11C21.866 11 25 14.134 25 18C25 21.866 21.866 25 18 25" stroke="white" stroke-width="2" stroke-linecap="round"/><path d="M18 25C16.343 25 15 23.657 15 22C15 20.343 16.343 19 18 19C19.657 19 21 20.343 21 22" stroke="white" stroke-width="2" stroke-linecap="round"/><circle cx="18" cy="13.5" r="1.5" fill="white"/><defs><linearGradient id="lgb" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse"><stop stop-color="#4f8eff"/><stop offset="1" stop-color="#a78bfa"/></linearGradient></defs></svg>`;
+  } else {
+    av.textContent = currentUser ? currentUser.name.charAt(0).toUpperCase() : 'Tu';
+  }
+  const b = document.createElement('div'); b.className = 'msg-bubble';
+  if (imgSrc) { const img=document.createElement('img'); img.src=imgSrc; img.className='msg-image-upload'; b.appendChild(img); }
+  if (html) { const d=document.createElement('div'); d.innerHTML=text; b.appendChild(d); }
+  else b.appendChild(document.createTextNode(text));
+  wrap.appendChild(av); wrap.appendChild(b); chatBox.appendChild(wrap);
+  chatBox.scrollTop = chatBox.scrollHeight; return b;
+}
+
+function showTyping() {
+  const wrap=document.createElement('div'); wrap.className='msg bot'; wrap.id='typing';
+  const av=document.createElement('div'); av.className='msg-av';
+  av.innerHTML=`<svg width="30" height="30" viewBox="0 0 36 36" fill="none"><rect width="36" height="36" rx="9" fill="url(#lgt)"/><path d="M11 18C11 14.134 14.134 11 18 11C21.866 11 25 14.134 25 18C25 21.866 21.866 25 18 25" stroke="white" stroke-width="2" stroke-linecap="round"/><path d="M18 25C16.343 25 15 23.657 15 22C15 20.343 16.343 19 18 19C19.657 19 21 20.343 21 22" stroke="white" stroke-width="2" stroke-linecap="round"/><circle cx="18" cy="13.5" r="1.5" fill="white"/><defs><linearGradient id="lgt" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse"><stop stop-color="#4f8eff"/><stop offset="1" stop-color="#a78bfa"/></linearGradient></defs></svg>`;
+  const b=document.createElement('div'); b.className='msg-bubble typing-bubble';
+  for(let i=0;i<3;i++){const d=document.createElement('span');d.className='tdot';b.appendChild(d);}
+  wrap.appendChild(av); wrap.appendChild(b); chatBox.appendChild(wrap); chatBox.scrollTop=chatBox.scrollHeight;
+  return wrap;
+}
+
+function updateCounter() { document.getElementById('msg-counter').textContent=msgCount+' message'+(msgCount>1?'s':''); }
+
+function resetChatUI() {
+  chatBox.innerHTML = `<div class="msg bot"><div class="msg-av"><svg width="30" height="30" viewBox="0 0 36 36" fill="none"><rect width="36" height="36" rx="9" fill="url(#lgr)"/><path d="M11 18C11 14.134 14.134 11 18 11C21.866 11 25 14.134 25 18C25 21.866 21.866 25 18 25" stroke="white" stroke-width="2" stroke-linecap="round"/><path d="M18 25C16.343 25 15 23.657 15 22C15 20.343 16.343 19 18 19C19.657 19 21 20.343 21 22" stroke="white" stroke-width="2" stroke-linecap="round"/><circle cx="18" cy="13.5" r="1.5" fill="white"/><defs><linearGradient id="lgr" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse"><stop stop-color="#4f8eff"/><stop offset="1" stop-color="#a78bfa"/></linearGradient></defs></svg></div><div class="msg-bubble">Salut ! Je suis <strong>Hclau IA</strong>. Tu peux me poser des questions, me demander de <strong>générer une image 🎨</strong>, ou envoyer une photo 📷</div></div>`;
+  msgCount = 0; updateCounter();
+}
+
+function clearChat() {
+  if (confirm('Effacer le chat ?')) { chatHistory = []; resetChatUI(); }
+}
+
+function downloadChat() {
+  let txt = 'Conversation Hclau IA\n' + new Date().toLocaleString('fr-FR') + '\n\n';
+  chatHistory.forEach(m => { txt += (m.role==='user'?'Toi':'Hclau IA') + ' : ' + m.content + '\n\n'; });
+  const a = document.createElement('a');
+  a.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(txt);
+  a.download = 'hclau-conversation.txt'; a.click();
+}
+
+// ══════════════════════════════════════════════════════════
+// UPLOAD IMAGE
+// ══════════════════════════════════════════════════════════
+function handleImageUpload(e) {
+  const file = e.target.files[0]; if(!file) return;
+  const model = localStorage.getItem('hc_model') || '';
+  if (!isVision(model)) { alert('Sélectionne un modèle Vision dans Configuration.'); e.target.value=''; return; }
+  if (file.size > 4*1024*1024) { alert('Image trop grande (max 4 MB).'); e.target.value=''; return; }
+  const reader = new FileReader();
+  reader.onload = ev => {
+    pendingImageDataUrl = ev.target.result;
+    pendingImageBase64  = pendingImageDataUrl.split(',')[1];
+    pendingImageMime    = file.type;
+    document.getElementById('imgThumb').src = pendingImageDataUrl;
+    document.getElementById('imgName').textContent = file.name;
+    document.getElementById('imgSize').textContent = (file.size/1024).toFixed(1)+' KB';
+    document.getElementById('imgPreviewWrap').classList.add('show');
+    document.getElementById('imgBtn').classList.add('has-image');
+  };
+  reader.readAsDataURL(file); e.target.value='';
+}
+
+function removeImage() {
+  pendingImageBase64=null; pendingImageMime=null; pendingImageDataUrl=null;
+  document.getElementById('imgPreviewWrap').classList.remove('show');
+  document.getElementById('imgBtn').classList.remove('has-image');
+  document.getElementById('imgThumb').src='';
+}
+
+// ══════════════════════════════════════════════════════════
+// SEND MESSAGE
+// ══════════════════════════════════════════════════════════
+async function sendMsg() {
+  const text   = userMsg.value.trim();
+  const hasImg = !!pendingImageBase64;
+  if ((!text && !hasImg) || sendBtn.disabled) return;
+
+  const displayText  = text || (hasImg ? '📷 Image envoyée' : '');
+  const savedImgSrc  = pendingImageDataUrl;
+  const savedB64     = pendingImageBase64;
+  const savedMime    = pendingImageMime;
+
+  userMsg.value=''; userMsg.style.height='auto';
+  sendBtn.disabled=true; msgCount++; updateCounter();
+  addMsg(displayText,'user',false,savedImgSrc);
+  removeImage();
+
+  // Auto-reply
+  if (!hasImg && text) {
+    const auto = checkAutoReply(text);
+    if (auto) {
+      const t=showTyping(); await new Promise(r=>setTimeout(r,600)); t.remove();
+      addMsg(auto,'bot');
+      chatHistory.push({role:'user',content:text},{role:'assistant',content:auto});
+      saveToInbox(text,auto); saveUserConversation(text,auto); saveToHistory(text,auto);
+      sendBtn.disabled=false; userMsg.focus(); return;
+    }
+  }
+
+  // Génération d'image
+  if (!hasImg && text && detectImageRequest(text)) {
+    const prompt = extractImagePrompt(text);
+    chatHistory.push({role:'user',content:text});
+    const result = await generateImage(prompt);
+    chatHistory.push({role:'assistant',content:result});
+    saveToInbox(text,result); saveUserConversation(text,result); saveToHistory(text,result);
+    sendBtn.disabled=false; userMsg.focus(); return;
+  }
+
+  const model     = localStorage.getItem('hc_model')    || 'llama-3.3-70b-versatile';
+  const sysPrompt = localStorage.getItem('hc_sysprompt') || 'Tu es Hclau IA, un assistant intelligent.';
+
+  const t = showTyping();
+  const origIcon = sendBtn.innerHTML;
+  sendBtn.innerHTML='<span style="font-size:10px;padding:0 4px;font-family:var(--font)">…</span>';
+  sendBtn.style.width='auto';
+
+  try {
+    const messages = [{role:'system',content:sysPrompt}, ...chatHistory];
+
+    if (hasImg && isVision(model)) {
+      const content=[];
+      if (text) content.push({type:'text',text});
+      content.push({type:'image_url',image_url:{url:'data:'+savedMime+';base64,'+savedB64}});
+      messages.push({role:'user',content});
+      chatHistory.push({role:'user',content:text||'Image envoyée'});
+    } else {
+      messages.push({role:'user',content:text});
+      chatHistory.push({role:'user',content:text});
+    }
+
+    const res = await fetch(GROQ_URL, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model,max_tokens:1024,stream:true,messages})
+    });
+
+    t.remove();
+
+    if (!res.ok) {
+      const err = await res.json().catch(()=>({error:{message:'Erreur inconnue.'}}));
+      addMsg('❌ Erreur : '+(err.error?.message||'Clé invalide ou absente. Configure-la dans Configuration.'),'bot');
+    } else {
+      const msgEl=document.createElement('div'); msgEl.className='msg bot';
+      msgEl.innerHTML=`<div class="msg-av"><svg width="30" height="30" viewBox="0 0 36 36" fill="none"><rect width="36" height="36" rx="9" fill="url(#lgs)"/><path d="M11 18C11 14.134 14.134 11 18 11C21.866 11 25 14.134 25 18C25 21.866 21.866 25 18 25" stroke="white" stroke-width="2" stroke-linecap="round"/><path d="M18 25C16.343 25 15 23.657 15 22C15 20.343 16.343 19 18 19C19.657 19 21 20.343 21 22" stroke="white" stroke-width="2" stroke-linecap="round"/><circle cx="18" cy="13.5" r="1.5" fill="white"/><defs><linearGradient id="lgs" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse"><stop stop-color="#4f8eff"/><stop offset="1" stop-color="#a78bfa"/></linearGradient></defs></svg></div><div class="msg-bubble" id="stream-bubble"></div>`;
+      chatBox.appendChild(msgEl);
+      const bubble=document.getElementById('stream-bubble');
+
+      const reader=res.body.getReader();
+      const decoder=new TextDecoder();
+      let fullReply='';
+
+      while(true){
+        const {done,value}=await reader.read(); if(done) break;
+        const chunk=decoder.decode(value,{stream:true});
+        const lines=chunk.split('\n').filter(l=>l.startsWith('data: '));
+        for(const line of lines){
+          const json=line.replace('data: ','');
+          if(json==='[DONE]') break;
+          try{
+            const parsed=JSON.parse(json);
+            const token=parsed.choices?.[0]?.delta?.content||'';
+            fullReply+=token;
+            bubble.innerHTML=renderMD(fullReply)+'<span class="cursor-blink">▋</span>';
+            chatBox.scrollTop=chatBox.scrollHeight;
+          }catch{}
+        }
+      }
+      bubble.innerHTML=renderMD(fullReply); bubble.id='';
+      chatHistory.push({role:'assistant',content:fullReply});
+      saveToInbox(displayText,fullReply); saveUserConversation(displayText,fullReply); saveToHistory(displayText,fullReply);
+    }
+  } catch(err) {
+    t.remove();
+    addMsg('⚠️ Erreur de connexion. Vérifie ta clé API dans Configuration.','bot');
+  }
+
+  sendBtn.innerHTML=origIcon; sendBtn.style.width='';
+  sendBtn.disabled=false; userMsg.focus();
+}
+
+function renderMD(text){
+  return text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/```(\w*)\n?([\s\S]*?)```/g,(_,l,c)=>`<pre><code>${c.trim()}</code></pre>`)
+    .replace(/`([^`]+)`/g,'<code>$1</code>')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g,'<em>$1</em>')
+    .replace(/^### (.+)$/gm,'<strong style="font-size:13px;color:var(--accent2)">$1</strong>')
+    .replace(/^## (.+)$/gm,'<strong style="font-size:14px;color:var(--accent)">$1</strong>')
+    .replace(/^# (.+)$/gm,'<strong style="font-size:15px">$1</strong>')
+    .replace(/^\s*[-•]\s(.+)$/gm,'<li>$1</li>')
+    .replace(/\n\n/g,'<br><br>').replace(/\n/g,'<br>');
+}
+
+// ══════════════════════════════════════════════════════════
+// HISTORIQUE
+// ══════════════════════════════════════════════════════════
+function saveToHistory(q, a) {
+  if (!currentUser) return;
+  const key  = 'hc_hist_' + currentUser.email;
+  const hist = DB.get(key) || [];
+  hist.push({ q, a, time: new Date().toISOString(), id: Date.now() });
+  DB.set(key, hist);
+}
+
+function renderHistory() {
+  const list = document.getElementById('historyList');
+  const key  = 'hc_hist_' + (currentUser?.email || '');
+  const hist = (DB.get(key) || []).slice().reverse();
+  if (!hist.length) { list.innerHTML = '<div class="empty">Aucun historique.</div>'; return; }
+  list.innerHTML = hist.map(h => `
+    <div class="hist-item" onclick="loadFromHistory(${h.id})">
+      <div class="hist-preview">💬 ${esc(h.q.substring(0,80))}${h.q.length>80?'…':''}</div>
+      <div class="hist-time">${new Date(h.time).toLocaleString('fr-FR')}</div>
+    </div>
+  `).join('');
+}
+
+function loadFromHistory(id) {
+  const key  = 'hc_hist_' + (currentUser?.email || '');
+  const hist = DB.get(key) || [];
+  const item = hist.find(h => h.id === id);
+  if (!item) return;
+  showView('chat', document.querySelector('.nav-item'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelector('.nav-item').classList.add('active');
+  addMsg(item.q, 'user');
+  addMsg(item.a, 'bot', true);
+}
+
+function clearHistory() {
+  if (!confirm('Effacer tout l\'historique ?')) return;
+  DB.set('hc_hist_'+(currentUser?.email||''), []);
+  renderHistory();
+}
+
+// ══════════════════════════════════════════════════════════
+// INBOX
+// ══════════════════════════════════════════════════════════
+function saveToInbox(q, a) {
+  const inbox = DB.get('hc_inbox') || [];
+  inbox.push({ q, a, time:new Date().toISOString(), read:false, id:Date.now(), email:currentUser?.email||'anonyme', name:currentUser?.name||'?' });
+  DB.set('hc_inbox', inbox);
+  updateInboxBadge();
+}
+
+function updateInboxBadge() {
+  const unread = (DB.get('hc_inbox')||[]).filter(m=>!m.read).length;
+  const badge  = document.getElementById('inbox-badge');
+  badge.textContent = unread; badge.style.display = unread ? 'inline' : 'none';
+}
+
+function renderInbox() {
+  const list  = document.getElementById('inboxList');
+  const inbox = (DB.get('hc_inbox')||[]).slice().reverse();
+  if (!inbox.length) { list.innerHTML='<div class="empty">Aucun message reçu.</div>'; return; }
+  list.innerHTML = inbox.map(m => `
+    <div class="inbox-msg">
+      <div class="inbox-meta">
+        <span class="inbox-email">📧 ${esc(m.email||'?')}</span>
+        <span class="inbox-time">${new Date(m.time).toLocaleString('fr-FR')}</span>
+        ${!m.read?'<span class="inbox-new">Nouveau</span>':''}
+      </div>
+      <div class="inbox-q"><strong>Q :</strong> ${esc(m.q)}</div>
+      <div style="font-size:13px;color:var(--muted2);margin-top:4px"><strong style="color:var(--text)">R :</strong> ${esc((m.a||'').substring(0,180))}${(m.a||'').length>180?'…':''}</div>
+      <div style="margin-top:8px"><button class="btn btn-red btn-sm" onclick="deleteInboxMsg(${m.id})">Suppr.</button></div>
+    </div>
+  `).join('');
+  const all = DB.get('hc_inbox')||[];
+  all.forEach(m=>m.read=true); DB.set('hc_inbox',all); updateInboxBadge();
+}
+
+function deleteInboxMsg(id){DB.set('hc_inbox',(DB.get('hc_inbox')||[]).filter(m=>m.id!==id));renderInbox();}
+function clearInbox(){if(confirm('Effacer tous les messages ?')){DB.set('hc_inbox',[]);renderInbox();}}
+
+// ══════════════════════════════════════════════════════════
+// UTILISATEURS (admin)
+// ══════════════════════════════════════════════════════════
+function saveUserConversation(q, a) {
+  if (!currentUser) return;
+  const key  = 'hc_conv_' + currentUser.email;
+  const conv = DB.get(key) || [];
+  conv.push({role:'user',content:q,time:new Date().toISOString()});
+  conv.push({role:'bot',content:a,time:new Date().toISOString()});
+  DB.set(key, conv);
+  const users = DB.get('hc_users') || {};
+  if (users[currentUser.email]) users[currentUser.email].msgCount = (users[currentUser.email].msgCount||0)+1;
+  DB.set('hc_users', users);
+}
+
+function renderUsers() {
+  const list  = document.getElementById('usersList');
+  const users = DB.get('hc_users') || {};
+  const arr   = Object.values(users).sort((a,b)=>(b.lastSeen||'').localeCompare(a.lastSeen||''));
+  if (!arr.length) { list.innerHTML='<div class="empty">Aucun utilisateur enregistré.</div>'; return; }
+  list.innerHTML = arr.map(u=>`
+    <div class="user-card" onclick="openConvModal('${esc(u.email)}')">
+      <div class="user-card-top">
+        <div class="user-card-email">👤 ${esc(u.name)} — ${esc(u.email)}</div>
+        <span class="user-card-badge">${u.msgCount||0} msgs</span>
+      </div>
+      <div class="user-card-meta">Inscrit ${new Date(u.firstSeen).toLocaleDateString('fr-FR')} · Dernière visite ${new Date(u.lastSeen).toLocaleDateString('fr-FR')}</div>
+    </div>
+  `).join('');
+}
+
+function openConvModal(email) {
+  const users = DB.get('hc_users') || {};
+  const user  = users[email];
+  const conv  = DB.get('hc_conv_'+email) || [];
+  document.getElementById('convModalTitle').textContent = '💬 '+(user?.name||email);
+  document.getElementById('convModalSub').textContent   = email+' · '+conv.filter(m=>m.role==='user').length+' messages';
+  const body = document.getElementById('convModalBody');
+  if (!conv.length) { body.innerHTML='<div class="empty">Aucune conversation.</div>'; }
+  else { body.innerHTML = conv.map(m=>`
+    <div>
+      <div class="conv-msg ${m.role==='user'?'user':'bot'}">${esc(m.content)}</div>
+      <div class="conv-msg-time" style="text-align:${m.role==='user'?'right':'left'};margin:3px 0 8px">${new Date(m.time).toLocaleString('fr-FR')}</div>
+    </div>`).join(''); }
+  document.getElementById('convModal').classList.add('open');
+}
+
+function closeConvModal(){document.getElementById('convModal').classList.remove('open');}
+
+// ══════════════════════════════════════════════════════════
+// AUTO-REPLIES
+// ══════════════════════════════════════════════════════════
+function checkAutoReply(text){
+  const replies=DB.get('hc_replies')||[],lower=text.toLowerCase();
+  for(const r of replies) if(lower.includes(r.kw.toLowerCase())) return r.resp;
+  return null;
+}
+function addReply(){
+  const kw=document.getElementById('kwInput').value.trim();
+  const resp=document.getElementById('respInput').value.trim();
+  if(!kw||!resp)return flash('replyAlert','Remplis les deux champs.',false);
+  const replies=DB.get('hc_replies')||[];
+  replies.push({kw,resp,id:Date.now()});DB.set('hc_replies',replies);
+  document.getElementById('kwInput').value='';document.getElementById('respInput').value='';
+  flash('replyAlert','Réponse ajoutée !',true);renderReplies();
+}
+function deleteReply(id){DB.set('hc_replies',(DB.get('hc_replies')||[]).filter(r=>r.id!==id));renderReplies();}
+function renderReplies(){
+  const list=document.getElementById('replyList');if(!list)return;
+  const replies=DB.get('hc_replies')||[];
+  if(!replies.length){list.innerHTML='<div class="empty">Aucune réponse auto.</div>';return;}
+  list.innerHTML=replies.map(r=>`<div class="reply-card"><div><div class="reply-kw">🔑 ${esc(r.kw)}</div><div class="reply-text">${esc(r.resp)}</div></div><button class="btn btn-red btn-sm" onclick="deleteReply(${r.id})">Suppr.</button></div>`).join('');
+}
+
+// ══════════════════════════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════════════════════════
+function saveKey(){
+  const k=document.getElementById('apiKeyInput').value.trim();
+  if(!k||!k.startsWith('gsk_'))return flash('keyAlert','La clé doit commencer par gsk_',false);
+  localStorage.setItem('hc_apikey',k);flash('keyAlert','Clé API sauvegardée !',true);
+}
+function saveModel(){
+  const m=document.getElementById('modelSelect').value;
+  localStorage.setItem('hc_model',m);updateModelUI(m);flash('modelAlert','Modèle sauvegardé !',true);
+}
+function savePrompt(){
+  const p=document.getElementById('sysPromptInput').value.trim();
+  if(!p)return flash('promptAlert','Le prompt ne peut pas être vide.',false);
+  localStorage.setItem('hc_sysprompt',p);flash('promptAlert','Prompt sauvegardé !',true);
+}
+
+// ══════════════════════════════════════════════════════════
+// NAVIGATION / LOCK
+// ══════════════════════════════════════════════════════════
+let pendingView=null;
+function isAdminUnlocked(){return sessionStorage.getItem('hc_unlocked')==='1';}
+function showLock(v){pendingView=v;document.getElementById('lockErr').textContent='';document.getElementById('lockInput').value='';document.getElementById('lockOverlay').style.display='flex';setTimeout(()=>document.getElementById('lockInput').focus(),100);}
+function checkPassword(){
+  const val=document.getElementById('lockInput').value;
+  if(val===ADMIN_CODE){sessionStorage.setItem('hc_unlocked','1');document.getElementById('lockOverlay').style.display='none';if(pendingView)_activateView(pendingView);}
+  else{const inp=document.getElementById('lockInput');inp.classList.add('shake');document.getElementById('lockErr').textContent='Code incorrect.';inp.value='';setTimeout(()=>inp.classList.remove('shake'),400);}
+}
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&document.getElementById('lockOverlay').style.display==='flex')checkPassword();
+  if(e.key==='Escape')closeConvModal();
+});
+function showView(name,btn){
+  if(ADMIN_PAGES.includes(name)&&!isAdminUnlocked()){showLock(name);return;}
+  _activateView(name);
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+}
+function _activateView(name){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  const el=document.getElementById('view-'+name);if(el)el.classList.add('active');
+  if(name==='inbox'){renderInbox();}
+  if(name==='history'){renderHistory();}
+  if(name==='users'){renderUsers();}
+  if(name==='replies')renderReplies();
+}
+function toggleSidebar(){document.getElementById('sidebar').classList.toggle('collapsed');}
+
+// ══════════════════════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════════════════════
+function flash(id,msg,ok){
+  const el=document.getElementById(id);if(!el)return;
+  el.textContent=msg;el.className='alert show '+(ok?'alert-ok':'alert-err');
+  setTimeout(()=>{el.className='alert';},3000);
+}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+</script>
+</body>
+</html>
